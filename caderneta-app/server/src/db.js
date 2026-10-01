@@ -36,3 +36,4 @@ async function connectDB() {
   await mongoose.connect(uri);
   console.log('MongoDB Atlas conectado com sucesso!');
 }
+module.exports = { connectDB, User, Transaction, Budget };
