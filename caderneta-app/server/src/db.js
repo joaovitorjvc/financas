@@ -17,6 +17,13 @@ const TransactionSchema = new mongoose.Schema({
   date: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
+const VerificationCodeSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  code: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now, expires: 600 } 
+});
+
+const VerificationCode = mongoose.model('VerificationCode', VerificationCodeSchema);
 
 const BudgetSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
@@ -36,4 +43,6 @@ async function connectDB() {
   await mongoose.connect(uri);
   console.log('MongoDB Atlas conectado com sucesso!');
 }
+module.exports = { connectDB, User, Transaction, Budget, VerificationCode };
 module.exports = { connectDB, User, Transaction, Budget };
+
