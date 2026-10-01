@@ -44,5 +44,5 @@ async function connectDB() {
   console.log('MongoDB Atlas conectado com sucesso!');
 }
 module.exports = { connectDB, User, Transaction, Budget, VerificationCode };
-module.exports = { connectDB, User, Transaction, Budget };
+
 
