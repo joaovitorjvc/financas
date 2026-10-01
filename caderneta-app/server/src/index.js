@@ -61,7 +61,14 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
   res.json({ user: { id: user.id, name: user.name, email: user.email } });
 });
 
-// Transactions
+// Transactions - GET
+app.get('/api/transactions', authMiddleware, (req, res) => {
+  const db = readData();
+  const userTx = db.transactions.filter(t => t.userId === req.userId);
+  res.json(userTx);
+});
+
+// Transactions - POST (com parcelamento)
 app.post('/api/transactions', authMiddleware, (req, res) => {
   const { description, amount, type, category, date, installments = 1 } = req.body;
   if (!description || !amount || !type || !category || !date) {
@@ -111,6 +118,19 @@ app.post('/api/transactions', authMiddleware, (req, res) => {
   res.status(201).json(createdTransactions);
 });
 
+// Transactions - DELETE
+app.delete('/api/transactions/:id', authMiddleware, (req, res) => {
+  const db = readData();
+  const initialLen = db.transactions.length;
+  db.transactions = db.transactions.filter(t => !(t.id === req.params.id && t.userId === req.userId));
+
+  if (db.transactions.length === initialLen) {
+    return res.status(404).json({ error: 'Lançamento não encontrado' });
+  }
+
+  writeData(db);
+  res.json({ success: true });
+});
 
 // Budgets / Envelopes
 app.get('/api/budgets', authMiddleware, (req, res) => {
@@ -130,6 +150,7 @@ app.put('/api/budgets', authMiddleware, (req, res) => {
   writeData(db);
   res.json(budgetObj.limits);
 });
+
 // Servir arquivos do React compilado
 const clientDist = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientDist));
