@@ -193,38 +193,30 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-8 mt-[-24px]">
         {/* Envelopes */}
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          {CATEGORIAS_PADRAO.map(c => {
-            const teto = budgets[c.id] || c.teto;
-            const spent = spentByCat[c.id] || 0;
-            const remaining = teto - spent;
-            const pct = Math.min(100, Math.max(0, (remaining / teto) * 100));
-            const isOver = remaining < 0;
+  {CATEGORIAS_PADRAO.map(c => {
+    const spent = spentByCat[c.id] || 0;
 
-            return (
-              <div
-                key={c.id}
-                onClick={() => setFilterCat(filterCat === c.id ? null : c.id)}
-                className={`relative bg-[#ebe7e0] rounded-xl p-3 h-32 flex flex-col justify-end overflow-hidden cursor-pointer border transition hover:-translate-y-0.5 shadow-sm ${filterCat === c.id ? 'ring-2 ring-[#2b1d14]' : 'border-[#2b1d14]/10'}`}
-              >
-                <div
-                  className={`absolute inset-x-0 bottom-0 transition-all ${isOver ? 'bg-red-400/20 h-full' : 'bg-[#b9cf92]'}`}
-                  style={{ height: isOver ? '100%' : `${pct}%` }}
-                />
-                <div className="relative z-10">
-                  <span className="text-xs font-bold text-[#5e4d41] uppercase tracking-wider block truncate">
-                    {c.nome}
-                  </span>
-                  <span className={`text-lg font-serif font-bold tabular-nums block ${isOver ? 'text-red-700' : 'text-[#2b1d14]'}`}>
-                    {fmtCurto(remaining)}
-                  </span>
-                  <span className="text-[11px] text-[#7d6b5e] block tabular-nums">
-                    de {fmtCurto(teto)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </section>
+    return (
+      <div
+        key={c.id}
+        onClick={() => setFilterCat(filterCat === c.id ? null : c.id)}
+        className={`bg-[#ebe7e0] rounded-xl p-3.5 h-24 flex flex-col justify-between cursor-pointer border transition hover:-translate-y-0.5 shadow-sm ${
+          filterCat === c.id ? 'ring-2 ring-[#2b1d14] bg-[#e2ddd4]' : 'border-[#2b1d14]/10'
+        }`}
+      >
+        <span className="text-xs font-bold text-[#5e4d41] uppercase tracking-wider block truncate">
+          {c.nome}
+        </span>
+        <div>
+          <span className="text-[11px] text-[#7d6b5e] block uppercase">Gasto</span>
+          <span className="text-lg font-serif font-bold text-[#2b1d14] tabular-nums block">
+            {fmt(spent)}
+          </span>
+        </div>
+      </div>
+    );
+  })}
+</section>
 
         {/* Form and Transactions Grid */}
         <div className="grid lg:grid-cols-[340px_1fr] gap-8 mt-10">
