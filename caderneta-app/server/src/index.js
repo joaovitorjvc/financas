@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -120,6 +121,13 @@ app.put('/api/budgets', authMiddleware, (req, res) => {
   budgetObj.limits = req.body;
   writeData(db);
   res.json(budgetObj.limits);
+});
+// Servir arquivos do React compilado
+const clientDist = path.join(__dirname, '../../client/dist');
+app.use(express.static(clientDist));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'));
 });
 
 app.listen(PORT, () => {
