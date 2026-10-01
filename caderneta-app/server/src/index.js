@@ -7,6 +7,12 @@ const authMiddleware = require('./middleware/auth');
 const { connectDB, User, Transaction, Budget, VerificationCode } = require('./db');
 const nodemailer = require('nodemailer');
 
+const app = express();
+const PORT = process.env.PORT || 4000;
+const JWT_SECRET = process.env.JWT_SECRET || 'caderneta-chave-secreta-2026';
+
+connectDB().catch(err => console.error('Erro ao conectar no MongoDB:', err));
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -15,16 +21,10 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const app = express();
-const PORT = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || 'caderneta-chave-secreta-2026';
-
-connectDB().catch(err => console.error('Erro ao conectar no MongoDB:', err));
-
 app.use(cors());
 app.use(express.json());
 
-// Auth - Enviar código por e-mail
+// Auth - Enviar código de verificação por e-mail (Gmail SMTP)
 app.post('/api/auth/send-code', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'E-mail é obrigatório' });
@@ -38,8 +38,8 @@ app.post('/api/auth/send-code', async (req, res) => {
   await VerificationCode.create({ email: email.toLowerCase(), code });
 
   try {
-    await resend.emails.send({
-      from: 'Caderneta <onboarding@resend.dev>',
+    await transporter.sendMail({
+      from: `"Caderneta" <${process.env.GMAIL_USER}>`,
       to: email.toLowerCase(),
       subject: `${code} é o seu código de verificação — Caderneta`,
       html: `
@@ -55,8 +55,8 @@ app.post('/api/auth/send-code', async (req, res) => {
     });
     res.json({ success: true, message: 'Código enviado com sucesso!' });
   } catch (err) {
-    console.error('Erro Resend:', err);
-    res.status(500).json({ error: 'Erro ao enviar o e-mail. Verifique a chave do Resend.' });
+    console.error('Erro Gmail SMTP:', err);
+    res.status(500).json({ error: 'Erro ao enviar o e-mail pelo Gmail.' });
   }
 });
 
