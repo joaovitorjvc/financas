@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - JWT_SECRET=chave_producao_super_segura
+    volumes:
+      - server_data:/app
+
+  client:
+    build:
+      context: ./client
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+
+volumes:
+  server_data:
