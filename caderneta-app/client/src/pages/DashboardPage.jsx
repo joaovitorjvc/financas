@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState({});
   const [filterCat, setFilterCat] = useState(null);
+  const [installments, setInstallments] = useState(1);
 
   // Form states
   const [type, setType] = useState('expense');
@@ -87,8 +88,9 @@ export default function DashboardPage() {
       amount: cleanAmount,
       type,
       category: cat,
-      date: dateStr
-    };
+      date: dateStr,
+      installments: type === 'expense' ? Number(installments) : 1
+};
 
     const res = await fetch('/api/transactions', {
       method: 'POST',
@@ -103,6 +105,7 @@ export default function DashboardPage() {
       setAmountInput('');
       setDesc('');
       fetchData();
+      setInstallments(1);
     }
   };
 
