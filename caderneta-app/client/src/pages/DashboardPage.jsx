@@ -90,7 +90,7 @@ export default function DashboardPage() {
       category: cat,
       date: dateStr,
       installments: type === 'expense' ? Number(installments) : 1
-};
+    };
 
     const res = await fetch('/api/transactions', {
       method: 'POST',
@@ -104,8 +104,8 @@ export default function DashboardPage() {
     if (res.ok) {
       setAmountInput('');
       setDesc('');
-      fetchData();
       setInstallments(1);
+      fetchData();
     }
   };
 
@@ -196,30 +196,30 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-8 mt-[-24px]">
         {/* Envelopes */}
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-  {CATEGORIAS_PADRAO.map(c => {
-    const spent = spentByCat[c.id] || 0;
+          {CATEGORIAS_PADRAO.map(c => {
+            const spent = spentByCat[c.id] || 0;
 
-    return (
-      <div
-        key={c.id}
-        onClick={() => setFilterCat(filterCat === c.id ? null : c.id)}
-        className={`bg-[#ebe7e0] rounded-xl p-3.5 h-24 flex flex-col justify-between cursor-pointer border transition hover:-translate-y-0.5 shadow-sm ${
-          filterCat === c.id ? 'ring-2 ring-[#2b1d14] bg-[#e2ddd4]' : 'border-[#2b1d14]/10'
-        }`}
-      >
-        <span className="text-xs font-bold text-[#5e4d41] uppercase tracking-wider block truncate">
-          {c.nome}
-        </span>
-        <div>
-          <span className="text-[11px] text-[#7d6b5e] block uppercase">Gasto</span>
-          <span className="text-lg font-serif font-bold text-[#2b1d14] tabular-nums block">
-            {fmt(spent)}
-          </span>
-        </div>
-      </div>
-    );
-  })}
-</section>
+            return (
+              <div
+                key={c.id}
+                onClick={() => setFilterCat(filterCat === c.id ? null : c.id)}
+                className={`bg-[#ebe7e0] rounded-xl p-3.5 h-24 flex flex-col justify-between cursor-pointer border transition hover:-translate-y-0.5 shadow-sm ${
+                  filterCat === c.id ? 'ring-2 ring-[#2b1d14] bg-[#e2ddd4]' : 'border-[#2b1d14]/10'
+                }`}
+              >
+                <span className="text-xs font-bold text-[#5e4d41] uppercase tracking-wider block truncate">
+                  {c.nome}
+                </span>
+                <div>
+                  <span className="text-[11px] text-[#7d6b5e] block uppercase">Gasto</span>
+                  <span className="text-lg font-serif font-bold text-[#2b1d14] tabular-nums block">
+                    {fmt(spent)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </section>
 
         {/* Form and Transactions Grid */}
         <div className="grid lg:grid-cols-[340px_1fr] gap-8 mt-10">
@@ -245,7 +245,9 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#5e4d41] uppercase mb-1">Valor (R$)</label>
+                <label className="block text-xs font-bold text-[#5e4d41] uppercase mb-1">
+                  {type === 'expense' && installments > 1 ? 'Valor Total (R$)' : 'Valor (R$)'}
+                </label>
                 <input
                   type="text"
                   required
@@ -267,7 +269,7 @@ export default function DashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid ${type === 'expense' ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
                 <div>
                   <label className="block text-xs font-bold text-[#5e4d41] uppercase mb-1">Categoria</label>
                   <select
@@ -291,6 +293,19 @@ export default function DashboardPage() {
                     className="w-full p-2.5 bg-white rounded-lg border border-[#2b1d14]/20 text-sm outline-none"
                   />
                 </div>
+                {type === 'expense' && (
+                  <div>
+                    <label className="block text-xs font-bold text-[#5e4d41] uppercase mb-1">Parcelas</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="48"
+                      value={installments}
+                      onChange={e => setInstallments(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      className="w-full p-2.5 bg-white rounded-lg border border-[#2b1d14]/20 text-sm outline-none"
+                    />
+                  </div>
+                )}
               </div>
 
               <button
