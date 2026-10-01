@@ -1,19 +1,38 @@
-const fs = require('fs');
-const path = require('path');
+const mongoose = require('mongoose');
 
-const DB_PATH = path.join(__dirname, '../data.json');
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
 
-function readData() {
-  if (!fs.existsSync(DB_PATH)) {
-    const initial = { users: [], transactions: [], budgets: [] };
-    fs.writeFileSync(DB_PATH, JSON.stringify(initial, null, 2));
-    return initial;
+const TransactionSchema = new mongoose.Schema({
+  userId: { type: String, required: true, index: true },
+  groupId: { type: String },
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  type: { type: String, required: true, enum: ['income', 'expense'] },
+  category: { type: String, required: true },
+  date: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const BudgetSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
+  limits: { type: Object, default: {} }
+});
+
+const User = mongoose.model('User', UserSchema);
+const Transaction = mongoose.model('Transaction', TransactionSchema);
+const Budget = mongoose.model('Budget', BudgetSchema);
+
+async function connectDB() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.warn('MONGODB_URI não configurada.');
+    return;
   }
-  return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
+  await mongoose.connect(uri);
+  console.log('MongoDB Atlas conectado com sucesso!');
 }
-
-function writeData(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-}
-
-module.exports = { readData, writeData };
