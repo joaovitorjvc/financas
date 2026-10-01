@@ -5,26 +5,19 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('./middleware/auth');
 const { connectDB, User, Transaction, Budget, VerificationCode } = require('./db');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'caderneta-chave-secreta-2026';
+const SENDER_EMAIL = process.env.SENDER_EMAIL;
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
 connectDB().catch(err => console.error('Erro ao conectar no MongoDB:', err));
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  }
-});
 
 app.use(cors());
 app.use(express.json());
 
-// Auth - Enviar código de verificação por e-mail (Gmail SMTP)
+// Auth - Enviar código de verificação por e-mail (Brevo API HTTP)
 app.post('/api/auth/send-code', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'E-mail é obrigatório' });
@@ -38,25 +31,40 @@ app.post('/api/auth/send-code', async (req, res) => {
   await VerificationCode.create({ email: email.toLowerCase(), code });
 
   try {
-    await transporter.sendMail({
-      from: `"Caderneta" <${process.env.GMAIL_USER}>`,
-      to: email.toLowerCase(),
-      subject: `${code} é o seu código de verificação — Caderneta`,
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; color: #2b1d14;">
-          <h2 style="color: #ff7200;">Caderneta — Minhas Finanças</h2>
-          <p>Seu código de confirmação para criar a conta é:</p>
-          <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; padding: 12px; background: #f1ede7; display: inline-block; border-radius: 8px;">
-            ${code}
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'Caderneta', email: SENDER_EMAIL },
+        to: [{ email: email.toLowerCase() }],
+        subject: `${code} é o seu código de verificação — Caderneta`,
+        htmlContent: `
+          <div style="font-family: sans-serif; padding: 20px; color: #2b1d14;">
+            <h2 style="color: #ff7200;">Caderneta — Minhas Finanças</h2>
+            <p>Seu código de confirmação para criar a conta é:</p>
+            <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; padding: 12px; background: #f1ede7; display: inline-block; border-radius: 8px;">
+              ${code}
+            </div>
+            <p style="color: #7d6b5e; margin-top: 16px;">Válido por 10 minutos. Se você não solicitou, ignore este e-mail.</p>
           </div>
-          <p style="color: #7d6b5e; margin-top: 16px;">Válido por 10 minutos. Se você não solicitou, ignore este e-mail.</p>
-        </div>
-      `
+        `
+      })
     });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      console.error('Erro Brevo API:', errData);
+      return res.status(500).json({ error: 'Erro ao enviar o e-mail via Brevo.' });
+    }
+
     res.json({ success: true, message: 'Código enviado com sucesso!' });
   } catch (err) {
-    console.error('Erro Gmail SMTP:', err);
-    res.status(500).json({ error: 'Erro ao enviar o e-mail pelo Gmail.' });
+    console.error('Erro ao chamar Brevo:', err);
+    res.status(500).json({ error: 'Erro de conexão com o serviço de e-mail.' });
   }
 });
 
