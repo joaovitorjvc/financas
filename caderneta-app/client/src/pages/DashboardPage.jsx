@@ -244,30 +244,45 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#5e4d41] uppercase mb-1">
-                  {type === 'expense' && installments > 1 ? 'Valor Total (R$)' : 'Valor (R$)'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="0,00"
-                  value={amountInput}
-                  onChange={e => setAmountInput(e.target.value)}
-                  className="w-full text-2xl font-serif font-bold p-3 bg-white rounded-lg border border-[#2b1d14]/20 outline-none focus:border-[#ff7200]"
-                />
-              </div>
+<div>
+  <div className="flex justify-between items-center mb-1">
+    <label className="block text-xs font-bold text-[#5e4d41] uppercase">
+      {type === 'expense' && installments > 1 ? 'Valor Total (R$)' : 'Valor (R$)'}
+    </label>
+    <span className="text-[10px] text-[#7d6b5e]">Apenas números</span>
+  </div>
+  <input
+    type="text"
+    inputMode="decimal"
+    required
+    placeholder="0,00"
+    maxLength={12}
+    value={amountInput}
+    onChange={e => {
+      // Permite apenas números e no máximo uma vírgula ou ponto
+      let val = e.target.value.replace(/[^0-9,\.]/g, '');
+      const parts = val.split(/[,\.]/);
+      if (parts.length > 2) val = parts[0] + ',' + parts.slice(1).join('');
+      setAmountInput(val);
+    }}
+    className="w-full text-2xl font-serif font-bold p-3 bg-white rounded-lg border border-[#2b1d14]/20 outline-none focus:border-[#ff7200]"
+  />
+</div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#5e4d41] uppercase mb-1">Descrição</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Aluguel, Supermercado..."
-                  value={desc}
-                  onChange={e => setDesc(e.target.value)}
-                  className="w-full p-2.5 bg-white rounded-lg border border-[#2b1d14]/20 text-sm outline-none"
-                />
-              </div>
+<div>
+  <div className="flex justify-between items-center mb-1">
+    <label className="block text-xs font-bold text-[#5e4d41] uppercase">Descrição</label>
+    <span className="text-[10px] text-[#7d6b5e] tabular-nums">{desc.length}/40</span>
+  </div>
+  <input
+    type="text"
+    placeholder="Ex: Aluguel, Supermercado..."
+    maxLength={40}
+    value={desc}
+    onChange={e => setDesc(e.target.value)}
+    className="w-full p-2.5 bg-white rounded-lg border border-[#2b1d14]/20 text-sm outline-none"
+  />
+</div>
 
               <div className={`grid ${type === 'expense' ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
                 <div>
