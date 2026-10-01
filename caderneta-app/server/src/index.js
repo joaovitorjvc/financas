@@ -62,47 +62,55 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
 });
 
 // Transactions
-app.get('/api/transactions', authMiddleware, (req, res) => {
-  const db = readData();
-  const userTx = db.transactions.filter(t => t.userId === req.userId);
-  res.json(userTx);
-});
-
 app.post('/api/transactions', authMiddleware, (req, res) => {
-  const { description, amount, type, category, date } = req.body;
+  const { description, amount, type, category, date, installments = 1 } = req.body;
   if (!description || !amount || !type || !category || !date) {
     return res.status(400).json({ error: 'Campos obrigatórios faltando' });
   }
 
   const db = readData();
-  const tx = {
-    id: Date.now().toString(),
-    userId: req.userId,
-    description,
-    amount: Number(amount),
-    type, // 'income' | 'expense'
-    category,
-    date,
-    createdAt: new Date().toISOString()
-  };
+  const numInstallments = Math.max(1, parseInt(installments, 10) || 1);
+  const [yearStr, monthStr, dayStr] = date.split('-');
+  const baseYear = parseInt(yearStr, 10);
+  const baseMonth = parseInt(monthStr, 10);
+  const baseDay = parseInt(dayStr, 10);
 
-  db.transactions.push(tx);
-  writeData(db);
-  res.status(201).json(tx);
-});
+  const installmentAmount = Math.round(Number(amount) / numInstallments);
+  const createdTransactions = [];
+  const groupId = numInstallments > 1 ? Date.now().toString() : null;
 
-app.delete('/api/transactions/:id', authMiddleware, (req, res) => {
-  const db = readData();
-  const initialLen = db.transactions.length;
-  db.transactions = db.transactions.filter(t => !(t.id === req.params.id && t.userId === req.userId));
+  for (let i = 0; i < numInstallments; i++) {
+    const d = new Date(baseYear, baseMonth - 1 + i, 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const maxDaysInMonth = new Date(y, d.getMonth() + 1, 0).getDate();
+    const finalDay = String(Math.min(baseDay, maxDaysInMonth)).padStart(2, '0');
+    const formattedDate = `${y}-${m}-${finalDay}`;
 
-  if (db.transactions.length === initialLen) {
-    return res.status(404).json({ error: 'Lançamento não encontrado' });
+    const desc = numInstallments > 1
+      ? `${description} (${i + 1}/${numInstallments})`
+      : description;
+
+    const tx = {
+      id: `${Date.now()}_${i}`,
+      groupId,
+      userId: req.userId,
+      description: desc,
+      amount: installmentAmount,
+      type,
+      category,
+      date: formattedDate,
+      createdAt: new Date().toISOString()
+    };
+
+    db.transactions.push(tx);
+    createdTransactions.push(tx);
   }
 
   writeData(db);
-  res.json({ success: true });
+  res.status(201).json(createdTransactions);
 });
+
 
 // Budgets / Envelopes
 app.get('/api/budgets', authMiddleware, (req, res) => {
