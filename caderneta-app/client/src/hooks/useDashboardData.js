@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { budgetApi, transactionApi } from '../services/api';
+import { budgetApi, transactionApi } from '../services/api.js';
 
 export function useDashboardData(token) {
   const [transactions, setTransactions] = useState([]);
