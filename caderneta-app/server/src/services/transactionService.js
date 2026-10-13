@@ -98,6 +98,14 @@ async function updateTransactionStatus(userId, transactionId, status) {
 async function deleteTransaction(userId, transactionId) {
   const deleted = await Transaction.findOneAndDelete({ _id: transactionId, userId });
   if (!deleted) throw new AppError('Lançamento não encontrado', 404);
+
+  if (deleted.type === 'expense' && deleted.groupId) {
+    await Transaction.deleteMany({
+      userId,
+      groupId: deleted.groupId,
+      date: { $gte: deleted.date }
+    });
+  }
 }
 
 module.exports = {

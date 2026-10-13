@@ -1,6 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calculateInstallments, listTransactions, updateTransactionStatus } = require('../src/services/transactionService');
+const {
+  calculateInstallments,
+  listTransactions,
+  updateTransactionStatus,
+  deleteTransaction
+} = require('../src/services/transactionService');
 const { Transaction } = require('../src/db');
 
 test('calcula parcelas mensais ajustando fevereiro e preservando a descrição numerada', () => {
@@ -108,6 +113,39 @@ test('atualiza status somente na despesa do usuário informado', async () => {
     assert.deepEqual(receivedOptions, { new: true, runValidators: true });
   } finally {
     Transaction.findOneAndUpdate = originalFindOneAndUpdate;
+  }
+});
+
+test('ao excluir parcela intermediária, remove parcelas posteriores e preserva anteriores', async () => {
+  const originalFindOneAndDelete = Transaction.findOneAndDelete;
+  const originalDeleteMany = Transaction.deleteMany;
+  let receivedFilter;
+
+  Transaction.findOneAndDelete = async filter => {
+    receivedFilter = filter;
+    return {
+      _id: { toString: () => 'expense-2' },
+      userId: 'user-1',
+      groupId: 'group-1',
+      type: 'expense',
+      date: '2026-02-15'
+    };
+  };
+  Transaction.deleteMany = async filter => {
+    receivedFilter = filter;
+    return { deletedCount: 2 };
+  };
+
+  try {
+    await deleteTransaction('user-1', 'expense-2');
+    assert.deepEqual(receivedFilter, {
+      userId: 'user-1',
+      groupId: 'group-1',
+      date: { $gte: '2026-02-15' }
+    });
+  } finally {
+    Transaction.findOneAndDelete = originalFindOneAndDelete;
+    Transaction.deleteMany = originalDeleteMany;
   }
 });
 
