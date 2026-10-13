@@ -1,0 +1,7 @@
+{
+  "task_id": "task-refatoracao-caderneta",
+  "task_description": "Refatorar a Caderneta para separar responsabilidades no backend, centralizar validação e comunicação frontend, e adicionar teste automatizado nativo sem alterar contratos ou infraestrutura.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

@@ -14,7 +14,7 @@ import { ChevronLeft, ChevronRight, LogOut, Trash2 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, token, logout } = useAuth();
-  const { transactions, addTransaction, deleteTransaction } = useDashboardData(token);
+  const { transactions, addTransaction, deleteTransaction, loadError, retry } = useDashboardData(token);
   const [currentYm, setCurrentYm] = useState(() => getCurrentYearMonth());
   const [filterCat, setFilterCat] = useState(null);
   const [installments, setInstallments] = useState(1);
@@ -133,9 +133,14 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-8 mt-[-24px]">
-        {mutationError && (
+        {(mutationError || loadError) && (
           <div role="alert" className="mb-6 p-3 rounded-lg bg-red-100 border border-red-200 text-red-700 text-sm">
-            {mutationError}
+            <div>{mutationError || loadError}</div>
+            {loadError && (
+              <button type="button" onClick={retry} className="mt-2 font-bold underline">
+                Tentar novamente
+              </button>
+            )}
           </div>
         )}
 

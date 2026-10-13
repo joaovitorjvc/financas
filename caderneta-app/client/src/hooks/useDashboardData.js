@@ -4,8 +4,10 @@ import { budgetApi, transactionApi } from '../services/api';
 export function useDashboardData(token) {
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState({});
+  const [loadError, setLoadError] = useState('');
 
   const refresh = useCallback(async () => {
+    setLoadError('');
     if (!token) {
       setTransactions([]);
       setBudgets({});
@@ -21,13 +23,16 @@ export function useDashboardData(token) {
       setBudgets(nextBudgets);
     } catch (error) {
       console.error(error);
+      setLoadError(`Não foi possível carregar os dados: ${error.message}`);
       throw error;
     }
   }, [token]);
 
+  const retry = useCallback(() => refresh().catch(() => {}), [refresh]);
+
   useEffect(() => {
-    refresh().catch(() => {});
-  }, [refresh]);
+    retry();
+  }, [retry]);
 
   const addTransaction = async payload => {
     await transactionApi.create(token, payload);
@@ -48,6 +53,8 @@ export function useDashboardData(token) {
   return {
     transactions,
     budgets,
+    loadError,
+    retry,
     refresh,
     addTransaction,
     deleteTransaction,
