@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [desc, setDesc] = useState('');
   const [cat, setCat] = useState('mercado');
   const [day, setDay] = useState(new Date().getDate());
+  const [mutationError, setMutationError] = useState('');
 
   // Calculations for current month
   const monthTx = useMemo(() => {
@@ -50,14 +51,24 @@ export default function DashboardPage() {
       installments: type === 'expense' ? Number(installments) : 1
     };
 
-    await addTransaction(payload);
-    setAmountInput('');
-    setDesc('');
-    setInstallments(1);
+    setMutationError('');
+    try {
+      await addTransaction(payload);
+      setAmountInput('');
+      setDesc('');
+      setInstallments(1);
+    } catch (error) {
+      setMutationError(`Não foi possível salvar o lançamento: ${error.message}`);
+    }
   };
 
   const handleDelete = async (id) => {
-    await deleteTransaction(id);
+    setMutationError('');
+    try {
+      await deleteTransaction(id);
+    } catch (error) {
+      setMutationError(`Não foi possível remover o lançamento: ${error.message}`);
+    }
   };
 
   const changeMonth = (diff) => {
@@ -122,6 +133,12 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-8 mt-[-24px]">
+        {mutationError && (
+          <div role="alert" className="mb-6 p-3 rounded-lg bg-red-100 border border-red-200 text-red-700 text-sm">
+            {mutationError}
+          </div>
+        )}
+
         {/* Envelopes */}
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {CATEGORIAS_PADRAO.map(c => {
