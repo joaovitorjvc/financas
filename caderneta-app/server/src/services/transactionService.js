@@ -3,8 +3,9 @@ const AppError = require('../errors/AppError');
 
 const MAX_INSTALLMENTS = 48;
 
-function calculateInstallments({ description, amount, type, category, date, installments = 1 }) {
+function calculateInstallments({ description, amount, type, category, date, installments = 1, status }) {
   const numInstallments = Number(installments);
+  const expenseStatus = status || 'pending';
   if (!Number.isInteger(numInstallments) || numInstallments < 1 || numInstallments > MAX_INSTALLMENTS) {
     throw new AppError('Número de parcelas deve estar entre 1 e 48', 400);
   }
@@ -32,16 +33,16 @@ function calculateInstallments({ description, amount, type, category, date, inst
       amount: installmentAmount,
       type,
       category,
-      date: formattedDate
+      date: formattedDate,
+      ...(type === 'expense' ? { status: expenseStatus } : {})
     });
   }
 
   return transactions;
 }
 
-async function listTransactions(userId) {
-  const userTransactions = await Transaction.find({ userId });
-  return userTransactions.map(transaction => ({
+function toTransactionDto(transaction) {
+  return {
     id: transaction._id.toString(),
     userId: transaction.userId,
     groupId: transaction.groupId,
@@ -49,8 +50,26 @@ async function listTransactions(userId) {
     amount: transaction.amount,
     type: transaction.type,
     category: transaction.category,
-    date: transaction.date
-  }));
+    date: transaction.date,
+    ...(transaction.type === 'expense' ? { status: transaction.status || 'pending' } : {})
+  };
+}
+
+function toCreatedTransactionDto(transaction) {
+  return {
+    id: transaction._id.toString(),
+    description: transaction.description,
+    amount: transaction.amount,
+    type: transaction.type,
+    category: transaction.category,
+    date: transaction.date,
+    ...(transaction.type === 'expense' ? { status: transaction.status || 'pending' } : {})
+  };
+}
+
+async function listTransactions(userId) {
+  const userTransactions = await Transaction.find({ userId });
+  return userTransactions.map(toTransactionDto);
 }
 
 async function createTransactions(userId, payload) {
@@ -60,17 +79,20 @@ async function createTransactions(userId, payload) {
 
   for (const entry of entries) {
     const transaction = await Transaction.create({ ...entry, groupId, userId });
-    createdTransactions.push({
-      id: transaction._id.toString(),
-      description: transaction.description,
-      amount: transaction.amount,
-      type: transaction.type,
-      category: transaction.category,
-      date: transaction.date
-    });
+    createdTransactions.push(toCreatedTransactionDto(transaction));
   }
 
   return createdTransactions;
+}
+
+async function updateTransactionStatus(userId, transactionId, status) {
+  const updated = await Transaction.findOneAndUpdate(
+    { _id: transactionId, userId, type: 'expense' },
+    { status },
+    { new: true, runValidators: true }
+  );
+  if (!updated) throw new AppError('Lançamento não encontrado', 404);
+  return toTransactionDto(updated);
 }
 
 async function deleteTransaction(userId, transactionId) {
@@ -78,4 +100,10 @@ async function deleteTransaction(userId, transactionId) {
   if (!deleted) throw new AppError('Lançamento não encontrado', 404);
 }
 
-module.exports = { calculateInstallments, listTransactions, createTransactions, deleteTransaction };
+module.exports = {
+  calculateInstallments,
+  listTransactions,
+  createTransactions,
+  updateTransactionStatus,
+  deleteTransaction
+};

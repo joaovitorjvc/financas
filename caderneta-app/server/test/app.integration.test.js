@@ -57,12 +57,102 @@ test('lista transações com sucesso e filtra pelo usuário autenticado', async 
       amount: 2500,
       type: 'expense',
       category: 'mercado',
-      date: '2026-10-13'
+      date: '2026-10-13',
+      status: 'pending'
     }]);
     assert.deepEqual(receivedFilter, { userId: 'user-1' });
   } finally {
     Transaction.find = originalFind;
   }
+});
+
+test('atualiza status da despesa persistida e mantém isolamento por userId', async () => {
+  const originalFindOneAndUpdate = Transaction.findOneAndUpdate;
+  let receivedFilter;
+  let receivedUpdate;
+  Transaction.findOneAndUpdate = async (filter, update) => {
+    receivedFilter = filter;
+    receivedUpdate = update;
+    return {
+      _id: { toString: () => 'transaction-1' },
+      userId: 'user-2',
+      groupId: null,
+      description: 'Mercado',
+      amount: 2500,
+      type: 'expense',
+      category: 'mercado',
+      date: '2026-10-13',
+      status: update.status
+    };
+  };
+
+  try {
+    const response = await request('/api/transactions/transaction-1/status', {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${tokenFor('user-2')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: 'next_month' })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).status, 'next_month');
+    assert.deepEqual(receivedFilter, {
+      _id: 'transaction-1',
+      userId: 'user-2',
+      type: 'expense'
+    });
+    assert.deepEqual(receivedUpdate, { status: 'next_month' });
+  } finally {
+    Transaction.findOneAndUpdate = originalFindOneAndUpdate;
+  }
+});
+
+test('rejeita status fora da allowlist com 400', async () => {
+  const response = await request('/api/transactions/transaction-1/status', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${tokenFor('user-1')}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ status: 'cancelled' })
+  });
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: 'Status inválido' });
+});
+
+test('retorna 404 ao atualizar lançamento inexistente ou não pertencente ao usuário', async () => {
+  const originalFindOneAndUpdate = Transaction.findOneAndUpdate;
+  Transaction.findOneAndUpdate = async () => null;
+
+  try {
+    const response = await request('/api/transactions/transaction-1/status', {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${tokenFor('user-1')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: 'paid' })
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: 'Lançamento não encontrado' });
+  } finally {
+    Transaction.findOneAndUpdate = originalFindOneAndUpdate;
+  }
+});
+
+test('rejeita PATCH de status sem autenticação', async () => {
+  const response = await request('/api/transactions/transaction-1/status', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'paid' })
+  });
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: 'Token não fornecido' });
 });
 
 test('rejeita payload de transação inválido com 400', async () => {

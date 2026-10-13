@@ -1,0 +1,22 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Adicionar status validado e persistido às despesas, com endpoint PATCH autenticado e compatibilidade com documentos legados.",
+  "status": "completed",
+  "steps": [
+    "Adicionar status condicional ao TransactionSchema em server/src/db.js, usando enum paid/pending/next_month e fallback pending somente para despesas.",
+    "Adicionar TRANSACTION_STATUSES e validator de atualização em server/src/validators/transactionValidator.js; manter criação e entradas compatíveis.",
+    "Adicionar DTO/fallback, criação padrão e updateTransactionStatus filtrado por userId em server/src/services/transactionService.js.",
+    "Adicionar controller e PATCH /api/transactions/:id/status em server/src/controllers/transactionController.js e server/src/routes/transactionRoutes.js.",
+    "Atualizar server/test/transactionService.test.js e server/test/app.integration.test.js para allowlist, default/fallback, PATCH persistido, 400, 404 e isolamento autenticado."
+  ],
+  "acceptance_criteria": [
+    "Toda despesa nova recebe pending quando não há status explícito e toda despesa legada listada sem status recebe pending no DTO.",
+    "PATCH /api/transactions/:id/status aceita apenas paid, pending ou next_month, exige autenticação e atualiza somente transação pertencente ao userId autenticado.",
+    "Entradas não recebem controle/status funcional e next_month não altera date nem cria transação.",
+    "Testes backend existentes e novos passam."
+  ],
+  "verification": ["npm test --prefix server", "npm run build --prefix client"],
+  "blocked_reason": null,
+  "findings": "Implementado status condicional no TransactionSchema com enum paid/pending/next_month, default pending apenas para despesas e rejeição de status em entradas. A criação de despesas normaliza pending quando ausente; DTOs listam pending como fallback para documentos legados e não expõem status funcional em entradas. Adicionada validação de PATCH e rota autenticada PATCH /api/transactions/:id/status; a mutação usa filtro _id + userId + type expense, retorna 404 para lançamento inexistente ou de outro usuário e não altera date nem cria transação. Testes executados com sucesso: npm test --prefix server (12 testes), npm test --prefix client (3 testes) e npm run build --prefix client (build Vite concluído). Para FEAT-002: despesas listadas/criadas retornam status; entradas não retornam status; usar PATCH /api/transactions/:id/status com body {status: paid|pending|next_month}; next_month é apenas estado persistido e não move datas."
+}

@@ -2,12 +2,25 @@ const AppError = require('../errors/AppError');
 
 const EXPENSE_CATEGORIES = ['moradia', 'mercado', 'transporte', 'contas', 'lazer', 'saude', 'outros'];
 const INCOME_CATEGORIES = ['salario', 'freela', 'investimentos', 'outros_in'];
+const TRANSACTION_STATUSES = ['paid', 'pending', 'next_month'];
 
 function isValidDate(date) {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
   const [year, month, day] = date.split('-').map(Number);
   const parsed = new Date(year, month - 1, day);
   return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
+}
+
+function validateTransactionStatus(req, res, next) {
+  try {
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    if (!TRANSACTION_STATUSES.includes(body.status)) {
+      throw new AppError('Status inválido', 400);
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 function validateTransaction(req, res, next) {
@@ -34,6 +47,9 @@ function validateTransaction(req, res, next) {
     if (!isValidDate(date)) {
       throw new AppError('Data inválida', 400);
     }
+    if (body.status !== undefined && (type !== 'expense' || !TRANSACTION_STATUSES.includes(body.status))) {
+      throw new AppError('Status inválido', 400);
+    }
 
     const installments = body.installments === undefined ? 1 : Number(body.installments);
     if (!Number.isInteger(installments) || installments < 1 || installments > 48) {
@@ -46,4 +62,10 @@ function validateTransaction(req, res, next) {
   }
 }
 
-module.exports = { validateTransaction, EXPENSE_CATEGORIES, INCOME_CATEGORIES };
+module.exports = {
+  validateTransaction,
+  validateTransactionStatus,
+  EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
+  TRANSACTION_STATUSES
+};

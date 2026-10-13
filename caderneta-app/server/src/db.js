@@ -16,6 +16,20 @@ const TransactionSchema = new mongoose.Schema({
   type: { type: String, required: true, enum: ['income', 'expense'] },
   category: { type: String, required: true },
   date: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ['paid', 'pending', 'next_month'],
+    default: function defaultExpenseStatus() {
+      return this.type === 'expense' ? 'pending' : undefined;
+    },
+    validate: {
+      validator: function validateExpenseStatus(value) {
+        const transactionType = this.type || (typeof this.getQuery === 'function' ? this.getQuery().type : undefined);
+        return transactionType === 'expense' || value === undefined;
+      },
+      message: 'Status só pode ser definido para despesas'
+    }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 const VerificationCodeSchema = new mongoose.Schema({
