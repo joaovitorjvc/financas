@@ -1,0 +1,7 @@
+{
+  "task_id": "task-status-lancamentos",
+  "task_description": "Adicionar status persistente Pago/Pendente/Proximo Mes às despesas do dashboard.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
