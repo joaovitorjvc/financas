@@ -7,11 +7,12 @@
     "clientTests": "passed: 5/5",
     "clientBuild": "passed: npm run build --prefix client",
     "diffCheck": "passed: git diff --check origin/main",
-    "infrastructureScope": "no Render, MongoDB/Brevo, Docker/Compose, CI, deploy, secrets, steering, or operational configuration changes found",
+    "functionalScope": "PATCH autenticado, allowlist paid/pending/next_month, defaults e fallback legado, isolamento por userId, entradas sem controle/status, Proximo Mes informativo e preservação de filtros/totais/parcelamento verificados",
+    "infrastructureScope": "nenhuma alteração em Render, MongoDB/Brevo, Docker/Compose, CI, deploy, segredos, autenticação ou configuração operacional",
     "evidenceReviewed": [
       ".agents/tasks/task-status-lancamentos/features/FEAT-001.json",
       ".agents/tasks/task-status-lancamentos/features/FEAT-002.json"
     ]
   },
-  "reviewDoc": "c:\\caderneta-off\\financas\\caderneta-app\\.agents\\tasks\\2026-10-13-154003-review.md"
+  "reviewDoc": "c:\\caderneta-off\\financas\\caderneta-app\\.agents\\tasks\\2026-10-13-155032-review.md"
 }

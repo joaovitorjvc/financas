@@ -1,0 +1,16 @@
+{
+  "project_type": "Aplicação Express/Mongoose com frontend React/Vite servido pelo backend",
+  "language": "JavaScript e JSX (CommonJS no servidor, ES modules no cliente)",
+  "build_system": "npm scripts na raiz, server e client; Vite 5 no client; node:test nativo, sem runner externo",
+  "test_framework": "node:test no server/test e client/test",
+  "build_command": "npm run build --prefix client (ou npm run build na raiz para o build existente)",
+  "test_command": "npm test --prefix server && npm test --prefix client",
+  "verification_instructions": "Executar testes backend, testes frontend e build Vite. A rota deve continuar protegida por authMiddleware e toda query de mutação deve filtrar userId.",
+  "snapshot_or_generated_files": null,
+  "environment_constraints": "Não alterar Render, Docker/Compose, deploy, segredos ou configurações operacionais; não sobrescrever relatórios existentes em .agents/tasks.",
+  "contribution_requirements": "Seguir .kiro/steering/project-infrastructure.md; preservar MongoDB, Render e autenticação Brevo. Não há AGENTS.md ou CONTRIBUTING.md no repositório.",
+  "key_patterns": "Rotas usam authMiddleware + asyncHandler; validação lança AppError e errorHandler retorna {error}; serviços retornam DTOs com id; frontend centraliza fetch em client/src/services/api.js, estado no hook e UI em DashboardPage.jsx; testes usam monkey patch nos modelos e leitura textual no frontend.",
+  "relevant_files": ["server/src/db.js", "server/src/validators/transactionValidator.js", "server/src/services/transactionService.js", "server/src/controllers/transactionController.js", "server/src/routes/transactionRoutes.js", "server/test/transactionService.test.js", "server/test/app.integration.test.js", "client/src/services/api.js", "client/src/hooks/useDashboardData.js", "client/src/pages/DashboardPage.jsx", "client/test/frontendMigration.test.js", ".kiro/steering/project-infrastructure.md"],
+  "directory_structure": "server/src contém app, routes, controllers, services, validators, middleware e db; server/test contém testes node:test. client/src contém páginas, hooks, services e utilitários; client/test contém testes node:test. .agents/tasks contém relatórios e artefatos de workflow.",
+  "status_decisions": "Campo status com API paid/pending/next_month, rótulos UI Pago/Pendente/Proximo Mes, padrão pending para despesas novas e legadas, sem status/control em entradas; next_month não move data nem cria transação."
+}
