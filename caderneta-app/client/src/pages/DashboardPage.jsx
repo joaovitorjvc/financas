@@ -14,7 +14,14 @@ import { ChevronLeft, ChevronRight, LogOut, Trash2 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, token, logout } = useAuth();
-  const { transactions, addTransaction, deleteTransaction, loadError, retry } = useDashboardData(token);
+  const {
+    transactions,
+    addTransaction,
+    deleteTransaction,
+    updateTransactionStatus,
+    loadError,
+    retry
+  } = useDashboardData(token);
   const [currentYm, setCurrentYm] = useState(() => getCurrentYearMonth());
   const [filterCat, setFilterCat] = useState(null);
   const [installments, setInstallments] = useState(1);
@@ -68,6 +75,15 @@ export default function DashboardPage() {
       await deleteTransaction(id);
     } catch (error) {
       setMutationError(`Não foi possível remover o lançamento: ${error.message}`);
+    }
+  };
+
+  const handleStatusChange = async (id, status) => {
+    setMutationError('');
+    try {
+      await updateTransactionStatus(id, status);
+    } catch (error) {
+      setMutationError(`Não foi possível atualizar o status: ${error.message}`);
     }
   };
 
@@ -315,6 +331,18 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
+                        {t.type === 'expense' && (
+                          <select
+                            aria-label={`Status de ${t.description}`}
+                            value={t.status || 'pending'}
+                            onChange={e => handleStatusChange(t.id, e.target.value)}
+                            className="p-1.5 bg-white rounded-lg border border-[#2b1d14]/20 text-xs outline-none focus:border-[#ff7200]"
+                          >
+                            <option value="paid">Pago</option>
+                            <option value="pending">Pendente</option>
+                            <option value="next_month">Proximo Mes</option>
+                          </select>
+                        )}
                         <span className={`font-serif font-bold text-sm ${t.type === 'income' ? 'text-emerald-700' : 'text-[#2b1d14]'}`}>
                           {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                         </span>

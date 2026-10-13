@@ -43,6 +43,11 @@ export const transactionApi = {
   remove: (token, id) => request(`/api/transactions/${id}`, {
     method: 'DELETE',
     token
+  }),
+  updateStatus: (token, id, status) => request(`/api/transactions/${id}/status`, {
+    method: 'PATCH',
+    token,
+    body: { status }
   })
 };
 

@@ -44,6 +44,16 @@ export function useDashboardData(token) {
     setTransactions(previous => previous.filter(transaction => transaction.id !== id));
   };
 
+  const updateTransactionStatus = async (id, status) => {
+    const updatedTransaction = await transactionApi.updateStatus(token, id, status);
+    setTransactions(previous => previous.map(transaction => (
+      transaction.id === id
+        ? { ...transaction, status: updatedTransaction.status }
+        : transaction
+    )));
+    return updatedTransaction;
+  };
+
   const updateBudget = async (categoryId, newAmount) => {
     const updated = { ...budgets, [categoryId]: newAmount };
     setBudgets(updated);
@@ -58,6 +68,7 @@ export function useDashboardData(token) {
     refresh,
     addTransaction,
     deleteTransaction,
+    updateTransactionStatus,
     updateBudget
   };
 }

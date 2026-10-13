@@ -55,6 +55,27 @@ test('transaction API rejects failed mutations with the server message', async (
   }
 });
 
+test('transaction status API uses the authenticated PATCH contract', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (path, options) => {
+    calls.push({ path, options });
+    return response({ id: 'transaction-1', status: 'paid' });
+  };
+
+  try {
+    const updated = await transactionApi.updateStatus('token-1', 'transaction-1', 'paid');
+
+    assert.equal(updated.status, 'paid');
+    assert.equal(calls[0].path, '/api/transactions/transaction-1/status');
+    assert.equal(calls[0].options.method, 'PATCH');
+    assert.equal(calls[0].options.headers.Authorization, 'Bearer token-1');
+    assert.deepEqual(JSON.parse(calls[0].options.body), { status: 'paid' });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('auth hydration and dashboard mutation failures remain wired to the UI', async () => {
   const [authContext, dashboard] = await Promise.all([
     readFile(authContextPath, 'utf8'),
@@ -68,4 +89,10 @@ test('auth hydration and dashboard mutation failures remain wired to the UI', as
   assert.match(dashboard, /Não foi possível salvar o lançamento/);
   assert.match(dashboard, /await deleteTransaction\(id\)/);
   assert.match(dashboard, /Não foi possível remover o lançamento/);
+  assert.match(dashboard, /await updateTransactionStatus\(id, status\)/);
+  assert.match(dashboard, /value=\{t\.status \|\| 'pending'\}/);
+  assert.match(dashboard, /<option value="paid">Pago<\/option>/);
+  assert.match(dashboard, /<option value="pending">Pendente<\/option>/);
+  assert.match(dashboard, /<option value="next_month">Proximo Mes<\/option>/);
+  assert.match(dashboard, /Não foi possível atualizar o status/);
 });

@@ -1,0 +1,22 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Exibir e alterar o status das despesas no extrato do dashboard sem recarga, com API frontend e acessibilidade nativa.",
+  "status": "completed",
+  "steps": [
+    "Adicionar transactionApi.updateStatus em client/src/services/api.js para PATCH /api/transactions/:id/status com Bearer e body status.",
+    "Adicionar updateTransactionStatus em client/src/hooks/useDashboardData.js para persistir via API e substituir somente a transação correspondente no estado, revertendo/propagando erro para a página.",
+    "Alterar client/src/pages/DashboardPage.jsx para renderizar select nativo com Pago, Pendente e Proximo Mes somente em despesas, usando fallback pending e tratamento de erro sem refresh.",
+    "Atualizar client/test/frontendMigration.test.js ou criar teste nativo complementar para método/path/body/token e presença das opções/fluxo da UI."
+  ],
+  "acceptance_criteria": [
+    "Cada saída no extrato mostra um controle de teclado com exatamente Pago, Pendente e Proximo Mes e indica o valor atual.",
+    "Entradas não mostram esse controle.",
+    "Alterar o select chama o PATCH autenticado e atualiza a linha sem recarregar a página, preservando filtros e totais.",
+    "Falhas da API são exibidas pelo dashboard e não deixam estado local divergente.",
+    "Testes frontend e build Vite passam."
+  ],
+  "verification": ["npm test --prefix client", "npm run build --prefix client"],
+  "blocked_reason": null,
+  "findings": "Implementado o fluxo frontend de status das despesas. transactionApi.updateStatus usa PATCH /api/transactions/:id/status com Bearer e body { status }; useDashboardData atualiza somente o status da transação correspondente após sucesso, sem refresh, preservando filtros e totais, e mantém o estado anterior quando a API falha. DashboardPage renderiza select nativo acessível apenas para despesas, com fallback pending e exatamente as opções Pago, Pendente e Proximo Mes; entradas não exibem o controle. Falhas são propagadas ao dashboard com mensagem de erro e sem divergência local. Testes adicionados cobrem path, método, token e body do PATCH e a presença das opções/fluxo de erro na UI. Verificações executadas com sucesso: npm test --prefix client (4 testes) e npm run build --prefix client (build Vite concluído). Backend permaneceu inalterado, integrando o contrato da FEAT-001; next_month continua sendo apenas estado persistido."
+}
