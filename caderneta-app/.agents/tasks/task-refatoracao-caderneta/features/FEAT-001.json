@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Separar o bootstrap Express das rotas, controllers e services de autenticação/Brevo, transações e orçamentos; centralizar configuração, validação e erros; e adicionar teste nativo da lógica de parcelamento sem serviços externos.",
+  "status": "completed",
+  "steps": [
+    "Criar server/src/config/env.js e server/src/app.js e deixar server/src/index.js apenas como bootstrap de conexão/listen, preservando o serving de client/dist.",
+    "Criar routers, controllers e services em server/src/routes, server/src/controllers e server/src/services usando os modelos de server/src/db.js; preservar exatamente os endpoints /api/auth/send-code, /api/auth/register, /api/auth/login, /api/auth/me, /api/transactions, /api/transactions/:id e /api/budgets.",
+    "Criar AppError, asyncHandler, errorHandler e validadores para autenticação, transações e orçamento; centralizar o JWT_SECRET no middleware e manter payloads válidos e respostas de domínio existentes.",
+    "Extrair função pura de parcelamento no transactionService, adicionar server/test/transactionService.test.js com node:test/node:assert e adicionar o script test=node --test em server/package.json."
+  ],
+  "acceptance_criteria": [
+    "As rotas existentes mantêm métodos, caminhos, autenticação Bearer, status e formatos de resposta para requests válidos.",
+    "A aplicação Express pode ser montada sem executar app.listen, e index.js não concentra mais regras de domínio.",
+    "Validação inválida retorna JSON controlado sem alterar o fluxo válido de auth, transações e orçamento.",
+    "npm test --prefix server passa e contém teste que detecta regressão no parcelamento mensal, mês curto e limite de parcelas.",
+    "npm run build na raiz passa sem depender de MongoDB, Brevo ou Render durante o build."
+  ],
+  "verification": [
+    "npm test --prefix server",
+    "node --test server/test/transactionService.test.js",
+    "npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "Implementação concluída. Evidências: npm test --prefix server passou com 2 testes; node --test server/test/transactionService.test.js passou com 2 testes; npm run build na raiz passou com build Vite concluído. O backend agora separa app/rotas/controllers/services/validadores/erros, preserva os endpoints e contratos válidos, centraliza configuração e mantém o fallback JWT/TTL de 7 dias. Limitações: MongoDB e Brevo não foram acionados durante os testes; a auditoria registrou 1 vulnerabilidade alta nas dependências do servidor e 9 vulnerabilidades (3 moderadas, 6 altas) nas dependências do cliente, sem executar audit fix; pendências de segurança do fallback JWT, localStorage, rate limiting, CORS e demais itens permanecem fora do escopo. Artefatos client/dist e node_modules foram gerados localmente e não fazem parte do commit."
+}

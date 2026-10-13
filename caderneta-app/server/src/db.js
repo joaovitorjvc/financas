@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { mongoUri } = require('./config/env');
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -35,7 +36,7 @@ const Transaction = mongoose.model('Transaction', TransactionSchema);
 const Budget = mongoose.model('Budget', BudgetSchema);
 
 async function connectDB() {
-  const uri = process.env.MONGODB_URI;
+  const uri = mongoUri;
   if (!uri) {
     console.warn('MONGODB_URI não configurada.');
     return;
