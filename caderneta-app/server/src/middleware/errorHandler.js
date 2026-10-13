@@ -3,6 +3,10 @@ const AppError = require('../errors/AppError');
 module.exports = function errorHandler(err, req, res, next) {
   if (res.headersSent) return next(err);
 
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Dados inválidos' });
+  }
+
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ error: err.message });
   }

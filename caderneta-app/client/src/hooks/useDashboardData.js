@@ -21,11 +21,12 @@ export function useDashboardData(token) {
       setBudgets(nextBudgets);
     } catch (error) {
       console.error(error);
+      throw error;
     }
   }, [token]);
 
   useEffect(() => {
-    refresh();
+    refresh().catch(() => {});
   }, [refresh]);
 
   const addTransaction = async payload => {
