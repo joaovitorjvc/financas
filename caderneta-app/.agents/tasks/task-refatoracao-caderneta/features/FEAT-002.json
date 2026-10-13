@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-002",
+  "type": "refactor",
+  "description": "Extrair uma camada HTTP frontend e um hook de dados do dashboard, remover fetch/persistência duplicados do fluxo de autenticação, preservar a UI e documentar os comandos e a arquitetura real.",
+  "status": "completed",
+  "steps": [
+    "Criar client/src/services/api.js para requests JSON, Authorization Bearer e erros; atualizar AuthContext.jsx e AuthPage.jsx para usar authApi, mantendo caderneta_token/caderneta_user e o cadastro em duas etapas.",
+    "Criar client/src/hooks/useDashboardData.js e mover para ele carregamento, criação/exclusão de transações e atualização de orçamento através do serviço; criar client/src/constants/finance.js e client/src/utils/finance.js para categorias e cálculos/formatação puros.",
+    "Refatorar client/src/pages/DashboardPage.jsx para consumir o hook/utilitários sem alterar filtros, parcelamento, categorias, payloads ou apresentação.",
+    "Atualizar README.md com Render/MongoDB/Brevo por nomes de variáveis, divisão real do projeto e os comandos npm test --prefix server e npm run build; executar a validação final sem tocar em infraestrutura."
+  ],
+  "acceptance_criteria": [
+    "AuthContext e DashboardPage não implementam chamadas fetch duplicadas fora da camada client/src/services/api.js.",
+    "O fluxo login, envio de código, registro, hidratação de /api/auth/me e logout continua funcional com as chaves de localStorage existentes.",
+    "Dashboard continua usando os mesmos contratos de transação/orçamento, categorias, cálculo mensal e parcelamento.",
+    "npm run build --prefix client e npm run build na raiz passam.",
+    "README.md documenta comandos de teste/build e não contém credenciais nem afirma que o banco é JSON local."
+  ],
+  "verification": [
+    "npm run build --prefix client",
+    "npm test --prefix server",
+    "npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "Implementação concluída. O frontend agora centraliza requests JSON, Bearer e erros em client/src/services/api.js; AuthContext mantém caderneta_token/caderneta_user e hidrata /api/auth/me; AuthPage mantém o cadastro em duas etapas; useDashboardData concentra carregamento e mutações; categorias, cálculos e formatação foram extraídos sem alterar contratos ou apresentação; README foi atualizado com a arquitetura real, Render/MongoDB/Brevo e variáveis sem credenciais. Evidências: npm run build --prefix client passou com build Vite concluído; npm test --prefix server passou com 2 testes; npm run build na raiz passou com instalação declarada e build Vite concluído; grep confirmou fetch somente em client/src/services/api.js. Limitações: MongoDB, Brevo e Render não foram acionados; não há testes frontend no projeto; o build reportou as vulnerabilidades preexistentes das dependências (1 alta no servidor e 9 no cliente: 3 moderadas e 6 altas), sem executar audit fix; pendências de segurança de JWT/localStorage, rate limiting, CORS e demais itens permanecem fora do escopo. client/dist e node_modules foram gerados localmente e não fazem parte do commit."
+}

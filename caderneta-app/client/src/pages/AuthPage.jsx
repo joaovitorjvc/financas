@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { authApi } from '../services/api';
 import { Lock, Mail, User, ArrowRight, KeyRound, CheckCircle2 } from 'lucide-react';
 
 export default function AuthPage() {
@@ -12,20 +13,14 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const { login } = useAuth();
+  const { login, register } = useAuth();
 
   const handleSendCode = async (e) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch('/api/auth/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao enviar código');
+      await authApi.sendCode(email);
       setStep(2);
     } catch (err) {
       setError(err.message);
@@ -39,16 +34,7 @@ export default function AuthPage() {
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, code })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao criar conta');
-      localStorage.setItem('caderneta_token', data.token);
-      localStorage.setItem('caderneta_user', JSON.stringify(data.user));
-      window.location.reload();
+      await register(name, email, password, code);
     } catch (err) {
       setError(err.message);
     } finally {

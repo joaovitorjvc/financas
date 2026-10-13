@@ -1,37 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ChevronLeft, ChevronRight, LogOut, Plus, Trash2, Tag, Calendar, DollarSign } from 'lucide-react';
-
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-const fmt = (cents) => brl.format(cents / 100);
-const fmtCurto = (cents) => brl.format(Math.round(cents / 100)).replace(/,00$/, '');
-
-const CATEGORIAS_PADRAO = [
-  { id: 'moradia', nome: 'Moradia', teto: 250000 },
-  { id: 'mercado', nome: 'Mercado', teto: 140000 },
-  { id: 'transporte', nome: 'Transporte', teto: 60000 },
-  { id: 'contas', nome: 'Contas Fixas', teto: 45000 },
-  { id: 'lazer', nome: 'Lazer', teto: 60000 },
-  { id: 'saude', nome: 'Saúde', teto: 35000 },
-  { id: 'outros', nome: 'Outros', teto: 30000 },
-];
-
-const ENTRADAS_CAT = [
-  { id: 'salario', nome: 'Salário' },
-  { id: 'freela', nome: 'Freela / Extra' },
-  { id: 'investimentos', nome: 'Rendimentos' },
-  { id: 'outros_in', nome: 'Outros' }
-];
+import { useDashboardData } from '../hooks/useDashboardData';
+import { CATEGORIAS_PADRAO, ENTRADAS_CAT } from '../constants/finance';
+import {
+  calculateSpentByCategory,
+  calculateTotals,
+  formatCurrency,
+  getCurrentYearMonth,
+  getMonthName,
+  getMonthTransactions
+} from '../utils/finance';
+import { ChevronLeft, ChevronRight, LogOut, Trash2 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, token, logout } = useAuth();
-  const [currentYm, setCurrentYm] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-
-  const [transactions, setTransactions] = useState([]);
-  const [budgets, setBudgets] = useState({});
+  const { transactions, addTransaction, deleteTransaction } = useDashboardData(token);
+  const [currentYm, setCurrentYm] = useState(() => getCurrentYearMonth());
   const [filterCat, setFilterCat] = useState(null);
   const [installments, setInstallments] = useState(1);
 
@@ -42,40 +26,14 @@ export default function DashboardPage() {
   const [cat, setCat] = useState('mercado');
   const [day, setDay] = useState(new Date().getDate());
 
-  // Load data
-  const fetchData = async () => {
-    try {
-      const [txRes, bRes] = await Promise.all([
-        fetch('/api/transactions', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/budgets', { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-      if (txRes.ok) setTransactions(await txRes.json());
-      if (bRes.ok) setBudgets(await bRes.json());
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [token]);
-
   // Calculations for current month
   const monthTx = useMemo(() => {
-    return transactions.filter(t => t.date.startsWith(currentYm));
+    return getMonthTransactions(transactions, currentYm);
   }, [transactions, currentYm]);
 
-  const totalIn = monthTx.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-  const totalOut = monthTx.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+  const { totalIn, totalOut } = calculateTotals(monthTx);
   const sobra = totalIn - totalOut;
-
-  const spentByCat = useMemo(() => {
-    const map = {};
-    monthTx.filter(t => t.type === 'expense').forEach(t => {
-      map[t.category] = (map[t.category] || 0) + t.amount;
-    });
-    return map;
-  }, [monthTx]);
+  const spentByCat = useMemo(() => calculateSpentByCategory(monthTx), [monthTx]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -92,44 +50,14 @@ export default function DashboardPage() {
       installments: type === 'expense' ? Number(installments) : 1
     };
 
-    const res = await fetch('/api/transactions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
-      setAmountInput('');
-      setDesc('');
-      setInstallments(1);
-      fetchData();
-    }
+    await addTransaction(payload);
+    setAmountInput('');
+    setDesc('');
+    setInstallments(1);
   };
 
   const handleDelete = async (id) => {
-    const res = await fetch(`/api/transactions/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) {
-      setTransactions(prev => prev.filter(t => t.id !== id));
-    }
-  };
-
-  const handleUpdateBudget = async (catId, newAmount) => {
-    const updated = { ...budgets, [catId]: newAmount };
-    setBudgets(updated);
-    await fetch('/api/budgets', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(updated)
-    });
+    await deleteTransaction(id);
   };
 
   const changeMonth = (diff) => {
@@ -139,7 +67,7 @@ export default function DashboardPage() {
   };
 
   const [ano, mes] = currentYm.split('-');
-  const nomeMes = new Date(Number(ano), Number(mes) - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+  const nomeMes = getMonthName(currentYm);
 
   return (
     <div className="min-h-screen bg-[#fbf9f6] text-[#2b1d14] font-sans pb-16">
@@ -178,14 +106,14 @@ export default function DashboardPage() {
               {sobra >= 0 ? `Sobra prevista em ${nomeMes}` : `Faltou em ${nomeMes}`}
             </p>
             <h1 className="text-5xl sm:text-7xl font-serif font-black tracking-tight mt-1 tabular-nums">
-              {fmt(Math.abs(sobra))}
+              {formatCurrency(Math.abs(sobra))}
             </h1>
             <div className="mt-6 flex flex-wrap gap-6 text-sm font-semibold">
               <span className="bg-[#2b1d14]/10 px-3 py-1.5 rounded-lg">
-                Entrou: <b className="text-emerald-950 font-bold">{fmt(totalIn)}</b>
+                Entrou: <b className="text-emerald-950 font-bold">{formatCurrency(totalIn)}</b>
               </span>
               <span className="bg-[#2b1d14]/10 px-3 py-1.5 rounded-lg">
-                Saiu: <b className="text-red-950 font-bold">{fmt(totalOut)}</b>
+                Saiu: <b className="text-red-950 font-bold">{formatCurrency(totalOut)}</b>
               </span>
             </div>
           </div>
@@ -213,7 +141,7 @@ export default function DashboardPage() {
                 <div>
                   <span className="text-[11px] text-[#7d6b5e] block uppercase">Gasto</span>
                   <span className="text-lg font-serif font-bold text-[#2b1d14] tabular-nums block">
-                    {fmt(spent)}
+                    {formatCurrency(spent)}
                   </span>
                 </div>
               </div>
@@ -366,7 +294,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-4">
                         <span className={`font-serif font-bold text-sm ${t.type === 'income' ? 'text-emerald-700' : 'text-[#2b1d14]'}`}>
-                          {t.type === 'income' ? '+' : '-'} {fmt(t.amount)}
+                          {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                         </span>
                         <button
                           onClick={() => handleDelete(t.id)}

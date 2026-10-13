@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -12,10 +13,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (token) {
-      fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.ok ? res.json() : Promise.reject())
+      authApi.me(token)
         .then(data => {
           setUser(data.user);
           localStorage.setItem('caderneta_user', JSON.stringify(data.user));
@@ -28,13 +26,7 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (email, password) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erro ao entrar');
+    const data = await authApi.login({ email, password });
 
     localStorage.setItem('caderneta_token', data.token);
     localStorage.setItem('caderneta_user', JSON.stringify(data.user));
@@ -43,14 +35,8 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const register = async (name, email, password) => {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erro ao cadastrar');
+  const register = async (name, email, password, code) => {
+    const data = await authApi.register({ name, email, password, code });
 
     localStorage.setItem('caderneta_token', data.token);
     localStorage.setItem('caderneta_user', JSON.stringify(data.user));
